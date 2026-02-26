@@ -29,6 +29,20 @@ export interface ZapViewResponse {
   data?: Record<string, string | number | boolean | null>;
 }
 
+export interface AnalyticsResponse {
+  totalViews: number;
+  uniqueVisitors: number;
+  aggregatedAnalytics: {
+    date: string;
+    count: number;
+    devices: Record<string, number>;
+    browsers: Record<string, number>;
+    operatingSystems: Record<string, number>;
+    topReferers: Array<{ referer: string | null; count: number }>;
+  };
+  lastUpdated: string;
+}
+
 export interface ApiError {
   message: string;
   status?: number;
@@ -92,6 +106,36 @@ export const viewZap = async (
     throw {
       message:
         err.response?.data?.message || err.message || "Failed to retrieve Zap",
+      status: err.response?.status,
+    } as ApiError;
+  }
+};
+
+// Get Zap analytics with deletion token (requires authentication)
+export const getZapAnalytics = async (
+  shortId: string,
+  deletionToken: string,
+): Promise<AnalyticsResponse> => {
+  try {
+    const response = await axios.get(
+      `${BACKEND_URL}/api/zaps/${shortId}/analytics`,
+      {
+        params: { token: deletionToken },
+        headers: {
+          Accept: "application/json",
+        },
+      },
+    );
+
+    if (response.data?.data) {
+      return response.data.data;
+    }
+    return response.data;
+  } catch (error) {
+    const err = error as AxiosError<{ message: string }>;
+    throw {
+      message:
+        err.response?.data?.message || err.message || "Failed to retrieve analytics",
       status: err.response?.status,
     } as ApiError;
   }
